@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Rideshare Calculator</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f2ede3;color:#0e1a2b;font-family:Arial,sans-serif}
+main{max-width:480px;margin:auto;padding:22px}
+h1{font-size:26px;margin-bottom:5px}
+.subtitle{color:#526174;font-size:14px;margin-bottom:22px}
+.card{background:white;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px #0001}
+label{display:block;font-weight:bold;font-size:14px;margin:14px 0 6px}
+input,select{width:100%;padding:13px;border:1px solid #ccd2d9;border-radius:9px;font-size:17px}
+.check{display:flex;align-items:center;gap:10px;margin-top:18px}
+.check input{width:20px;height:20px}
+.check label{margin:0}
+button{background:#1e3350;color:white;border:0;border-radius:10px;padding:15px;width:100%;font-size:17px;font-weight:bold;margin-top:18px}
+.result{text-align:center}
+.amount{font-size:38px;font-weight:bold;margin:10px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+.metric{background:#f2ede3;border-radius:10px;padding:12px}
+.metric strong{display:block;font-size:20px;margin-top:6px}
+.small{font-size:12px;color:#667085}
+#decision{font-weight:bold;font-size:19px;padding:12px;border-radius:9px}
+.good{background:#d8f2e1;color:#126331}
+.bad{background:#ffe2de;color:#9c2921}
+</style>
+</head>
+<body>
+<main>
+<h1>Ride Profit Calculator</h1>
+<div class="subtitle">Uber & Lyft | 2026 Hyundai Santa Fe SEL</div>
+
+<div class="card">
+<label for="platform">Rideshare company</label>
+<select id="platform">
+<option>Uber</option>
+<option>Lyft</option>
+</select>
+
+<label for="payout">Your payout ($)</label>
+<input id="payout" type="number" min="0" step=".01" placeholder="65">
+
+<label for="miles">One-way trip miles</label>
+<input id="miles" type="number" min="0" step=".1" placeholder="50">
+
+<label for="minutes">One-way trip minutes</label>
+<input id="minutes" type="number" min="0" step="1" placeholder="60">
+
+<div class="check">
+<input type="checkbox" id="empty" checked>
+<label for="empty">Include empty return trip</label>
+</div>
+
+<label for="gas">Gas price per gallon ($)</label>
+<input id="gas" type="number" min="0" step=".01" value="3.49">
+
+<label for="wear">Maintenance and depreciation per mile ($)</label>
+<input id="wear" type="number" min="0" step=".01" value="0.15">
+
+<label for="target">Target profit per hour ($)</label>
+<input id="target" type="number" min="0" value="25">
+
+<button onclick="calculate()">Calculate Profit</button>
+</div>
+
+<div class="card result" id="results" hidden>
+<div>Estimated Trip Profit</div>
+<div class="amount" id="profit"></div>
+<div id="decision"></div>
+
+<div class="metrics">
+<div class="metric">Profit / Hour<strong id="hourly"></strong></div>
+<div class="metric">Profit / Mile<strong id="perMile"></strong></div>
+<div class="metric">Total Miles<strong id="totalMiles"></strong></div>
+<div class="metric">Vehicle Cost<strong id="cost"></strong></div>
+</div>
+
+<p class="small">Estimates before taxes, waiting time, and unpaid travel to pickup. Assumes 24 MPG.</p>
+</div>
+</main>
+
+<script>
+const ids=["gas","wear","target"];
+ids.forEach(id=>{
+const saved=localStorage.getItem(id);
+if(saved!==null)document.getElementById(id).value=saved;
+});
+
+function calculate(){
+const get=id=>Number(document.getElementById(id).value);
+const payout=get("payout");
+const miles=get("miles");
+const minutes=get("minutes");
+const gas=get("gas");
+const wear=get("wear");
+const target=get("target");
+const empty=document.getElementById("empty").checked;
+
+if(!document.getElementById("payout").value ||
+   !document.getElementById("miles").value ||
+   !document.getElementById("minutes").value ||
+   payout<0 || miles<=0 || minutes<=0 ||
+   gas<0 || wear<0 || target<0){
+alert("Please enter valid trip details.");
+return;
+}
+
+ids.forEach(id=>localStorage.setItem(id,document.getElementById(id).value));
+
+const factor=empty?2:1;
+const totalMiles=miles*factor;
+const totalHours=minutes*factor/60;
+const vehicleCost=totalMiles*(gas/24+wear);
+const profit=payout-vehicleCost;
+const hourly=profit/totalHours;
+const perMile=profit/totalMiles;
+const money=n=>"$"+n.toFixed(2);
+
+document.getElementById("results").hidden=false;
+document.getElementById("profit").textContent=money(profit);
+document.getElementById("hourly").textContent=money(hourly);
+document.getElementById("perMile").textContent=money(perMile);
+document.getElementById("totalMiles").textContent=totalMiles.toFixed(1);
+document.getElementById("cost").textContent=money(vehicleCost);
+
+const decision=document.getElementById("decision");
+const good=hourly>=target && perMile>=1;
+decision.className=good?"good":"bad";
+decision.textContent=good?"MEETS YOUR TARGET":"BELOW YOUR TARGET";
+document.getElementById("results").scrollIntoView({behavior:"smooth"});
+}
+</script>
+</body>
+</html>
